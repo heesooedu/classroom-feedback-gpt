@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}파이썬 자동 채점 시스템{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- 외부 CSS (선택) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <h1 class="site-title">파이썬 자동 채점 시스템</h1>
+      <nav class="nav-links">
+        {% if session.student_id %}
+          <span class="nav-user">{{ session.student_name }} 학생</span>
+          <a href="{{ url_for('problem_list') }}">문제 목록</a>
+          <a href="{{ url_for('history') }}">제출 이력</a>
+          <a href="{{ url_for('student_logout') }}">로그아웃</a>
+        {% else %}
+          <a href="{{ url_for('student_login') }}">학생 로그인</a>
+        {% endif %}
+        <a href="{{ url_for('admin_login') }}" class="nav-admin">관리자</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container main-container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="flash">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

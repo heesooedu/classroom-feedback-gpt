@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}문제 관리 - 관리자{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>문제 관리</h2>
+  <div style="margin-bottom:12px;">
+    <a href="{{ url_for('admin_problem_new') }}" class="btn">새 문제 만들기</a>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>제목</th>
+        <th>공개</th>
+        <th>만점</th>
+        <th>작성일</th>
+        <th>작업</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in problems %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td>{{ p.title }}</td>
+          <td>
+            {% if p.is_open %}
+              <span class="badge badge-green">공개</span>
+            {% else %}
+              <span class="badge badge-gray">비공개</span>
+            {% endif %}
+          </td>
+          <td>{{ p.max_score }}</td>
+          <td>{{ p.created_at.strftime("%Y-%m-%d") }}</td>
+          <td>
+            <a href="{{ url_for('admin_problem_edit', problem_id=p.id) }}" class="btn btn-small">
+              수정
+            </a>
+            <form method="post"
+                  action="{{ url_for('admin_problem_toggle_open', problem_id=p.id) }}"
+                  style="display:inline;">
+              <button class="btn btn-small btn-secondary" type="submit">
+                {% if p.is_open %}비공개로{% else %}공개로{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="6">등록된 문제가 없습니다.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

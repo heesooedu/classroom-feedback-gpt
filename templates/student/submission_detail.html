@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}제출 결과 - 파이썬 자동 채점{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>제출 결과</h2>
+  <p>
+    문제: <strong>{{ submission.problem.title }}</strong><br>
+    시도 번호: {{ submission.attempt_no }}회<br>
+    점수: <strong>{{ submission.score }}/{{ submission.max_score }}</strong><br>
+    제출 시간: {{ submission.created_at.strftime("%Y-%m-%d %H:%M:%S") }}
+  </p>
+
+  <h3 class="subheading">요약</h3>
+  <p class="text-body">
+    {{ submission.summary or "요약 없음" }}
+  </p>
+
+  <h3 class="subheading">피드백</h3>
+  <pre class="code-block">{{ submission.feedback }}</pre>
+
+  <h3 class="subheading">제출한 코드</h3>
+  <pre class="code-block code-dark">{{ submission.code }}</pre>
+
+  <div style="margin-top:12px;">
+    <a href="{{ url_for('problem_detail', problem_id=submission.problem_id) }}"
+       class="btn btn-secondary">문제로 돌아가기</a>
+    <a href="{{ url_for('history') }}" class="btn btn-secondary">내 이력 보기</a>
+  </div>
+</div>
+{% endblock %}

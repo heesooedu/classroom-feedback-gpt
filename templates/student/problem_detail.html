@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ problem.title }} - 파이썬 자동 채점{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js"
+        crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>{{ problem.title }}</h2>
+  <p class="problem-desc">
+    {{ problem.description }}
+  </p>
+
+  <div class="two-cols">
+    <div>
+      <h3 class="subheading">예시 입력</h3>
+      <pre class="code-block">{{ problem.sample_input or "없음" }}</pre>
+    </div>
+    <div>
+      <h3 class="subheading">예시 출력</h3>
+      <pre class="code-block">{{ problem.sample_output or "없음" }}</pre>
+    </div>
+  </div>
+
+  <p class="text-muted" style="margin-top:8px;">
+    만점: {{ problem.max_score }}점
+  </p>
+</div>
+
+<div class="card">
+  <h3>코드 작성 및 제출</h3>
+  <form method="post" action="{{ url_for('submit_code', problem_id=problem.id) }}"
+        onsubmit="syncEditor();">
+    <label class="label">파이썬 코드</label>
+    <div id="editor" class="editor"></div>
+    <textarea name="code" id="code-input" style="display:none;"></textarea>
+
+    <div style="margin-top:12px;">
+      <button class="btn" type="submit">제출하고 자동 채점 받기</button>
+      <span class="text-muted" style="margin-left:8px;">최대 제출 횟수: 10회</span>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>이 문제에 대한 내 제출 기록</h3>
+  <ul class="list-plain">
+    {% for s in submissions %}
+      <li class="list-item">
+        <a href="{{ url_for('submission_detail', submission_id=s.id) }}" class="list-title">
+          시도 {{ s.attempt_no }} · {{ s.score }}/{{ s.max_score }}점
+        </a>
+        <div class="list-meta">
+          {{ s.created_at.strftime("%Y-%m-%d %H:%M:%S") }}
+        </div>
+        {% if s.summary %}
+          <div class="text-muted">{{ s.summary }}</div>
+        {% endif %}
+      </li>
+    {% else %}
+      <li>아직 제출한 기록이 없습니다.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<script>
+  const editor = ace.edit("editor");
+  editor.session.setMode("ace/mode/python");
+  editor.setTheme("ace/theme/github");
+  editor.setValue("# 여기에 파이썬 코드를 작성하세요.\nprint('안녕하세요')", -1);
+
+  function syncEditor() {
+    const textarea = document.getElementById("code-input");
+    textarea.value = editor.getValue();
+  }
+</script>
+{% endblock %}

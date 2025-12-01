@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}문제 {{ '수정' if problem else '생성' }} - 관리자{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>문제 {{ '수정' if problem else '생성' }}</h2>
+
+  {% if problem %}
+    <form method="post"
+          action="{{ url_for('admin_problem_edit', problem_id=problem.id) }}">
+  {% else %}
+    <form method="post" action="{{ url_for('admin_problem_new') }}">
+  {% endif %}
+
+    <label class="label">제목</label>
+    <input class="input" type="text" name="title"
+           value="{{ problem.title if problem else '' }}" required>
+
+    <label class="label">설명 (문제 본문)</label>
+    <textarea class="input textarea" name="description" rows="5" required>
+{{ problem.description if problem else '' }}</textarea>
+
+    <label class="label">예시 입력</label>
+    <textarea class="input textarea" name="sample_input" rows="3">
+{{ problem.sample_input if problem and problem.sample_input else '' }}</textarea>
+
+    <label class="label">예시 출력</label>
+    <textarea class="input textarea" name="sample_output" rows="3">
+{{ problem.sample_output if problem and problem.sample_output else '' }}</textarea>
+
+    <label class="label">정답 예시 코드 (파이썬)</label>
+    <textarea class="input textarea" name="answer_code" rows="6" required>
+{{ problem.answer_code if problem else '' }}</textarea>
+
+    <label class="label">채점 기준 (루브릭)</label>
+    <textarea class="input textarea" name="rubric" rows="4" required>
+{{ problem.rubric if problem else '' }}</textarea>
+
+    <label class="label">만점 점수</label>
+    <input class="input" type="number" name="max_score" min="1"
+           value="{{ problem.max_score if problem else 10 }}" required>
+
+    <label class="label">
+      <input type="checkbox" name="is_open"
+             {% if problem and problem.is_open %}checked{% endif %}>
+      학생에게 공개
+    </label>
+
+    <button class="btn" type="submit" style="margin-top:12px;">
+      저장
+    </button>
+    <a href="{{ url_for('admin_problem_list') }}" class="btn btn-secondary" style="margin-left:8px;">
+      목록으로
+    </a>
+  </form>
+</div>
+{% endblock %}

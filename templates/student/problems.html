@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}문제 목록 - 파이썬 자동 채점{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>문제 목록</h2>
+  <p class="text-muted">
+    공개된 문제들만 보입니다. 문제를 클릭해서 코드를 작성·제출하세요.
+  </p>
+  <ul class="list-plain" style="margin-top:12px;">
+    {% for p in problems %}
+      <li class="list-item">
+        <a href="{{ url_for('problem_detail', problem_id=p.id) }}" class="list-title">
+          {{ p.title }}
+        </a>
+        <div class="list-meta">
+          ID: {{ p.id }} · 만점: {{ p.max_score }}점
+        </div>
+      </li>
+    {% else %}
+      <li>현재 공개된 문제가 없습니다.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
