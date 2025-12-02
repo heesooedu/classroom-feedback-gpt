@@ -32,17 +32,25 @@
 <div class="card">
   <h3>코드 작성 및 제출</h3>
   <form method="post" action="{{ url_for('submit_code', problem_id=problem.id) }}"
-        onsubmit="syncEditor();">
+        onsubmit="return handleSubmit();">
     <label class="label">파이썬 코드</label>
     <div id="editor" class="editor"></div>
     <textarea name="code" id="code-input" style="display:none;"></textarea>
 
     <div style="margin-top:12px;">
-      <button class="btn" type="submit">제출하고 자동 채점 받기</button>
-      <span class="text-muted" style="margin-left:8px;">최대 제출 횟수: 10회</span>
+      <button class="btn" type="submit" id="submit-btn">
+        제출하고 자동 채점 받기
+      </button>
+      <span id="submit-status" class="text-muted" style="margin-left:8px;"></span>
     </div>
   </form>
 </div>
+
+
+
+
+
+
 
 <div class="card">
   <h3>이 문제에 대한 내 제출 기록</h3>
@@ -65,15 +73,37 @@
   </ul>
 </div>
 
+
+
 <script>
   const editor = ace.edit("editor");
   editor.session.setMode("ace/mode/python");
   editor.setTheme("ace/theme/github");
-  editor.setValue("# 여기에 파이썬 코드를 작성하세요.\nprint('안녕하세요')", -1);
+  editor.setValue("", -1);  // 기본 주석 제거한 버전
 
   function syncEditor() {
     const textarea = document.getElementById("code-input");
     textarea.value = editor.getValue();
   }
+
+  function handleSubmit() {
+    // 에디터 내용 → textarea 동기화
+    syncEditor();
+
+    const btn = document.getElementById("submit-btn");
+    const status = document.getElementById("submit-status");
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "채점 중...";
+    }
+    if (status) {
+      status.textContent = "잠시만 기다려 주세요. GPT가 코드를 채점하고 있습니다.";
+    }
+
+    // 폼은 그대로 전송
+    return true;
+  }
 </script>
+
 {% endblock %}

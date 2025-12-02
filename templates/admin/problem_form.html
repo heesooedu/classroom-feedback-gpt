@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block title %}문제 {{ '수정' if problem else '생성' }} - 관리자{% endblock %}
 
+{% block head_extra %}
+  <!-- Ace Editor (관리자 정답 코드 입력용) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js"
+          crossorigin="anonymous"></script>
+{% endblock %}
+
 {% block content %}
 <div class="card">
   <h2>문제 {{ '수정' if problem else '생성' }}</h2>
@@ -29,8 +35,17 @@
 {{ problem.sample_output if problem and problem.sample_output else '' }}</textarea>
 
     <label class="label">정답 예시 코드 (파이썬)</label>
-    <textarea class="input textarea" name="answer_code" rows="6" required>
-{{ problem.answer_code if problem else '' }}</textarea>
+
+    <!-- 실제 전송되는 textarea (숨겨짐, required 유지) -->
+    <textarea class="input textarea code-textarea"
+              id="answer_code"
+              name="answer_code"
+              rows="10"
+              required
+              style="display:none;">{{ problem.answer_code if problem else '' }}</textarea>
+
+    <!-- 화면에 보이는 Ace 에디터 컨테이너 -->
+    <div id="answer_editor" class="editor"></div>
 
     <label class="label">채점 기준 (루브릭)</label>
     <textarea class="input textarea" name="rubric" rows="4" required>
@@ -40,7 +55,7 @@
     <input class="input" type="number" name="max_score" min="1"
            value="{{ problem.max_score if problem else 10 }}" required>
 
-    <label class="label">
+    <label class="label" style="margin-top:8px;">
       <input type="checkbox" name="is_open"
              {% if problem and problem.is_open %}checked{% endif %}>
       학생에게 공개
@@ -54,4 +69,39 @@
     </a>
   </form>
 </div>
+
+<script>
+  window.addEventListener("DOMContentLoaded", function() {
+    const ta = document.getElementById("answer_code");
+    const container = document.getElementById("answer_editor");
+
+    if (typeof ace === "undefined") {
+      console.warn("Ace editor not loaded. Using plain textarea for answer_code.");
+      // Ace가 안 뜨면 textarea 다시 보이게
+      ta.style.display = "block";
+      return;
+    }
+
+    const editor = ace.edit("answer_editor");
+    editor.session.setMode("ace/mode/python");
+    editor.setTheme("ace/theme/github");
+    editor.setOptions({
+      fontSize: "20px",
+      tabSize: 4,
+      useSoftTabs: true,
+      showPrintMargin: false
+    });
+
+    // 초기 코드 세팅
+    const initialCode = ta.value && ta.value.trim().length > 0
+      ? ta.value
+      : "";
+    editor.setValue(initialCode, -1);
+
+    // Ace 내용이 바뀔 때마다 textarea와 동기화
+    editor.session.on("change", function() {
+      ta.value = editor.getValue();
+    });
+  });
+</script>
 {% endblock %}

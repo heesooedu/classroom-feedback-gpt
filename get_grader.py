@@ -1,28 +1,47 @@
-# get_grader.py
 import os
 import json
-from typing import Dict
+from typing import Optional
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from models import Problem  # 타입 힌트용
-
-# .env 에서 OPENAI_API_KEY 로드
+# .env 로드 (OPENAI_API_KEY, GPT_MODEL 등)
 load_dotenv()
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# 기본 사용할 채점용 모델 이름 (없으면 gpt-4.1-mini 사용)
+DEFAULT_GPT_MODEL = os.getenv("GPT_MODEL", "gpt-4.1-mini")
 
-def build_prompt(problem: Problem, code: str, student_label: str) -> str:
-    """
-    프롬프트 텍스트만 별도 함수로 분리.
-    백틱(``` 같은 것) 없이 그냥 텍스트만 사용해서 복붙 문제 없게 구성.
-    """
-    return f"""다음은 파이썬 기초 문법 문제와 학생의 제출 코드입니다.
 
+def build_grading_messages(problem, code: str, student_label: str):
+    """
+    GPT에게 전달할 system / user 메시지를 구성한다.
+    여기 system_prompt 안에 '정답 코드 직접 제공 금지' 등 정책을 넣는다.
+    """
+    system_prompt = """
+당신은 고등학교 파이썬 기초 문법 과제를 채점하는 조교입니다.
+학생의 코드를 실행하지 않고, 정적 분석과 문제 요구사항을 기준으로 채점합니다.
+
+[역할 / 원칙]
+- 점수는 0에서 max_score 사이의 정수로 평가합니다.
+- 출력이 요구사항과 거의 맞지만 사소한 오류(띄어쓰기, 따옴표 등)가 있으면 약간 감점합니다.
+- 문법 오류나 실행 불가능한 코드는 크게 감점합니다.
+- 피드백은 한국어로, 친절하고 구체적으로 작성합니다.
+- 학생이 스스로 생각해 볼 수 있도록, "정답 코드 전체"를 그대로 제공하지 않습니다.
+- 필요한 경우, 짧은 코드 조각(한두 줄)이나 의사코드는 허용되지만,
+  "정답은 아래와 같습니다:"와 같이 완전한 정답 코드를 제시하지 않습니다.
+- 학생의 현재 코드를 바탕으로 무엇이 잘못되었는지, 어떻게 수정하면 좋을지 설명하는 데 집중합니다.
+
+[출력 형식]
+- 반드시 JSON 형식으로만 응답해야 합니다.
+- JSON 바깥에 다른 설명 텍스트를 절대 쓰지 않습니다.
+"""
+
+    user_prompt = f"""
 [문제 정보]
-제목: {problem.title}
-설명: {problem.description}
+- 제목: {problem.title}
+- 설명: {problem.description}
 
 [예시 입력]
 {problem.sample_input or "없음"}
@@ -42,66 +61,83 @@ def build_prompt(problem: Problem, code: str, student_label: str) -> str:
 [학생 제출 코드]
 {code}
 
-위 정보를 바탕으로 아래 JSON 스키마에 맞추어 채점 결과를 반환하세요.
+위 정보를 바탕으로 아래 JSON 스키마에 맞게 채점 결과를 반환하세요.
 
-- score: 정수 또는 실수, 학생의 점수 (0 ~ max_score)
-- max_score: 정수 또는 실수, 만점 기준 (기본 10점)
-- feedback: 학생이 이해하기 쉬운 한국어 피드백 (구체적인 수정 방향)
-- summary: 짧은 요약 (예: "출력은 맞지만 변수 이름 규칙 위반으로 감점")
+- score: 점수 (0 ~ max_score 정수)
+- max_score: 만점 (정수)
+- feedback: 학생에게 보여줄 구체적인 피드백 (한국어, 여러 줄 가능)
+- summary: 교사용 짧은 요약 (한두 문장)
 
-반드시 다음과 같이 하나의 JSON 객체만 반환하세요.
-
-예시:
-{{"score": 8, "max_score": 10, "feedback": "설명...", "summary": "요약..."}}
+JSON 예시:
+{{
+  "score": 8,
+  "max_score": 10,
+  "feedback": "print 문 끝에 괄호를 닫지 않았습니다. 문제에서 요구한 문장을 그대로 출력하세요.",
+  "summary": "출력 문법은 이해했으나, 세부 문법 오류로 감점."
+}}
 """
 
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
 
-def grade_with_gpt(problem: Problem, code: str, student_label: str) -> Dict:
-    """
-    GPT에게 JSON만 받는 채점 함수.
-    실패하면 예외를 던지지 않고 "채점 실패" 정보 포함한 dict 반환.
-    """
-    system_msg = (
-        "당신은 한국의 고등학교 파이썬 교사이자 자동 채점 시스템입니다. "
-        "반드시 JSON 형식으로만 응답하세요."
-    )
 
-    user_prompt = build_prompt(problem, code, student_label)
+def grade_with_gpt(
+    problem,
+    code: str,
+    student_label: str,
+    model_name: Optional[str] = None,
+):
+    """
+    문제 + 학생 코드 + 학생 라벨을 받아 GPT로 채점하고
+    점수/피드백/요약을 dict로 반환한다.
+    """
+    model = model_name or DEFAULT_GPT_MODEL
+    messages = build_grading_messages(problem, code, student_label)
 
     try:
         completion = client.chat.completions.create(
-            model="gpt-5.1-mini",  # 필요하면 환경변수로 빼도 됨
-            messages=[
-                {"role": "system", "content": system_msg},
-                {"role": "user", "content": user_prompt},
-            ],
-            # JSON 모드 강제
+            model=model,
+            messages=messages,
             response_format={"type": "json_object"},
             temperature=0.0,
         )
 
-        content = completion.choices[0].message.content
-        data = json.loads(content)
+        raw_content = completion.choices[0].message.content or "{}"
 
-        score = float(data.get("score", 0))
-        max_score = float(data.get("max_score", problem.max_score))
-        feedback = data.get("feedback", "피드백 없음.")
-        summary = data.get("summary", "요약 없음.")
+        try:
+            data = json.loads(raw_content)
+        except json.JSONDecodeError:
+            # 혹시 JSON 형식이 살짝 틀어졌을 때 대비
+            print("GPT 응답 JSON 파싱 실패, 원본:", raw_content)
+            raise
+
+        score = int(data.get("score", 0))
+        # Problem 모델에 max_score 필드가 있다고 가정, 없으면 기본 10점
+        max_score = int(data.get("max_score", getattr(problem, "max_score", 10) or 10))
+        feedback = data.get("feedback", "").strip()
+        summary = data.get("summary", "").strip()
 
         return {
             "score": score,
             "max_score": max_score,
             "feedback": feedback,
             "summary": summary,
-            "model": completion.model,
+            "model": model,
         }
+
     except Exception as e:
-        # 서버 콘솔에만 로그
+        # 서버 콘솔에는 에러 내용을 찍어두고,
+        # 학생 화면에는 공손한 실패 메시지를 돌려준다.
         print("GPT 채점 중 오류:", e)
+
+        fallback_max = getattr(problem, "max_score", 10) or 10
+
         return {
             "score": 0,
-            "max_score": problem.max_score,
+            "max_score": fallback_max,
             "feedback": "자동 채점에 실패했습니다. 선생님께 문의하세요.",
-            "summary": "자동 채점 오류.",
-            "model": None,
+            "summary": f"자동 채점 실패: {e}",
+            "model": model,
         }

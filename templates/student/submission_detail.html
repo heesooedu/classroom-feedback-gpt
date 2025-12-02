@@ -16,8 +16,13 @@
     {{ submission.summary or "요약 없음" }}
   </p>
 
+
+
   <h3 class="subheading">피드백</h3>
-  <pre class="code-block">{{ submission.feedback }}</pre>
+    <div class="code-block">
+    {{ submission.feedback | e | replace('\n', '<br>') | safe }}
+  </div>
+
 
   <h3 class="subheading">제출한 코드</h3>
   <pre class="code-block code-dark">{{ submission.code }}</pre>
