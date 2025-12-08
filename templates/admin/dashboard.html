@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}대시보드 - 관리자{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <h2>수업 대시보드</h2>
+    <a href="{{ url_for('admin_class_import') }}" class="btn btn-secondary">
+      수업 CSV 등록
+    </a>
+  </div>
+
+  <form method="get" action="{{ url_for('admin_dashboard') }}" class="filter-form" style="margin-bottom:16px;">
+    <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+      <div>
+        <label class="label" for="class_group_id">수업(분반)</label>
+        <select class="input" id="class_group_id" name="class_group_id">
+          {% for cg in class_groups %}
+            <option value="{{ cg.id }}"
+              {% if selected_class_group and cg.id == selected_class_group.id %}selected{% endif %}>
+              {{ cg.label }}{% if cg.year %} ({{ cg.year }} {{ cg.term or "" }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="label" for="problem_id">문제</label>
+        <select class="input" id="problem_id" name="problem_id">
+          <option value="">-- 문제 선택 --</option>
+          {% for p in problems %}
+            <option value="{{ p.id }}"
+              {% if selected_problem_id == p.id %}selected{% endif %}>
+              [{{ p.id }}] {{ p.title }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <button class="btn" type="submit" style="margin-top:6px;">적용</button>
+      </div>
+    </div>
+  </form>
+
+  {% if not selected_class_group %}
+    <p>먼저 수업 CSV를 등록하여 수업(분반)을 개설하세요.</p>
+  {% elif not selected_problem %}
+    <p>위에서 문제를 선택하면, 이 수업 학생들의 제출 현황을 볼 수 있습니다.</p>
+  {% elif rows|length == 0 %}
+    <p>이 수업에는 아직 등록된 학생이 없거나, 선택한 문제에 대한 제출이 없습니다.</p>
+  {% else %}
+    <h3 style="margin-top:8px; margin-bottom:8px;">
+      {{ selected_class_group.label }} – "{{ selected_problem.title }}" 제출 현황
+    </h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>학번</th>
+          <th>이름</th>
+          <th>최고 점수</th>
+          <th>제출 횟수</th>
+          <th>마지막 제출 시간</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr class="{% if not row.has_submitted %}status-none{% elif row.best_score == row.max_score %}status-full{% else %}status-part{% endif %}">
+            <td>{{ row.student.student_code }}</td>
+            <td>{{ row.student.name }}</td>
+            <td>
+              {% if row.best_score is not none %}
+                {{ row.best_score }} / {{ row.max_score }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>{{ row.attempt_count }}</td>
+            <td>
+              {% if row.last_time %}
+                {{ row.last_time.strftime("%Y-%m-%d %H:%M") }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              {% if not row.has_submitted %}
+                미제출
+              {% elif row.best_score == row.max_score %}
+                만점
+              {% else %}
+                부분 정답
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+{% endblock %}

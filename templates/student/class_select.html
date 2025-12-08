@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}수업 선택{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>수업 선택</h2>
+  <p>
+    {{ student.name }} 학생이 수강 중인 수업이 여러 개 있습니다.<br>
+    이번에 접속할 수업을 선택해 주세요.
+  </p>
+
+  <form method="post" action="{{ url_for('select_class') }}">
+    <ul style="list-style:none; padding:0; margin-top:12px;">
+      {% for cg in class_groups %}
+        <li style="margin-bottom:8px;">
+          <label style="cursor:pointer;">
+            <input type="radio" name="class_group_id" value="{{ cg.id }}" required>
+            {{ cg.label }}
+            {% if cg.year %} ({{ cg.year }} {{ cg.term or "" }}){% endif %}
+          </label>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <button class="btn" type="submit">선택</button>
+    <a href="{{ url_for('student_logout') }}" class="btn btn-secondary" style="margin-left:8px;">
+      로그인 다시하기
+    </a>
+  </form>
+</div>
+{% endblock %}

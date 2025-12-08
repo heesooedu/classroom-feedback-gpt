@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}제출 상세 - 관리자{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>제출 상세</h2>
+
+  <p class="text-muted" style="margin-bottom:12px;">
+    {{ submission.created_at.strftime("%Y-%m-%d %H:%M:%S") }} 에 제출됨
+  </p>
+
+  <h3 class="subheading">학생 정보</h3>
+  <p>
+    {{ submission.student.grade }}학년
+    {{ submission.student.class_no }}반
+    {{ "%02d"|format(submission.student.student_no) }}번
+    {{ submission.student.name }}
+  </p>
+
+  <h3 class="subheading">문제 정보</h3>
+  <p>
+    [{{ submission.problem.id }}] {{ submission.problem.title }}
+  </p>
+
+  <h3 class="subheading">채점 결과</h3>
+  <p>
+    점수: <strong>{{ submission.score }} / {{ submission.max_score }}</strong><br>
+    시도 번호: {{ submission.attempt_no or 1 }}회차<br>
+    사용 모델: {{ submission.gpt_model or "알 수 없음" }}
+  </p>
+
+  <h3 class="subheading">학생 제출 코드</h3>
+  <pre class="code-block"><code>{{ submission.code | e }}</code></pre>
+
+  <h3 class="subheading">GPT 피드백</h3>
+  <div class="code-block">
+    {{ submission.feedback | e | replace('\n', '<br>') | safe }}
+  </div>
+
+  {% if submission.summary %}
+    <h3 class="subheading">요약 (교사용)</h3>
+    <p>{{ submission.summary }}</p>
+  {% endif %}
+
+  <div style="margin-top:16px;">
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+      대시보드로 돌아가기
+    </a>
+    <a href="{{ url_for('admin_problem_list') }}" class="btn">
+      문제 목록
+    </a>
+  </div>
+</div>
+{% endblock %}

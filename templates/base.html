@@ -4,40 +4,63 @@
   <meta charset="utf-8">
   <title>{% block title %}파이썬 자동 채점 시스템{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- 외부 CSS (선택) -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-
   {% block head_extra %}{% endblock %}
 </head>
 <body>
-  <header class="site-header">
-    <div class="container header-inner">
-      <h1 class="site-title">파이썬 자동 채점 시스템</h1>
+  <!-- 상단 바 -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="{{ url_for('index') }}" class="logo">
+        파이썬 자동 채점 시스템
+      </a>
+
       <nav class="nav-links">
-        {% if session.student_id %}
-          <span class="nav-user">{{ session.student_name }} 학생</span>
+        {# 1) 관리자 로그인 상태 #}
+        {% if session.get('admin_id') %}
+          <a href="{{ url_for('admin_dashboard') }}">대시보드</a>
+          <a href="{{ url_for('admin_problem_list') }}">문제 관리</a>
+          <a href="{{ url_for('admin_class_import') }}">수업 CSV 등록</a>
+          <a href="{{ url_for('admin_logout') }}">관리자 로그아웃</a>
+
+
+
+
+        {# 2) 학생 로그인 상태 #}
+        {% elif session.get('student_id') %}
+          {% if session.get('class_group_label') %}
+            <span class="current-class">
+              수업: {{ session.get('class_group_label') }}
+            </span>
+          {% endif %}
           <a href="{{ url_for('problem_list') }}">문제 목록</a>
-          <a href="{{ url_for('history') }}">제출 이력</a>
-          <a href="{{ url_for('student_logout') }}">로그아웃</a>
+          <a href="{{ url_for('history') }}">내 제출 이력</a>
+          <a href="{{ url_for('student_logout') }}">학생 로그아웃</a>
+
+        {# 3) 로그인 안 된 상태 #}
         {% else %}
           <a href="{{ url_for('student_login') }}">학생 로그인</a>
+          <a href="{{ url_for('admin_login') }}">관리자</a>
         {% endif %}
-        <a href="{{ url_for('admin_login') }}" class="nav-admin">관리자</a>
       </nav>
     </div>
   </header>
 
-  <main class="container main-container">
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        {% for msg in messages %}
-          <div class="flash">{{ msg }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+  <!-- 플래시 메시지 -->
+  <main class="page">
+    <div class="container">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for msg in messages %}
+              <div class="flash-msg">{{ msg }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
 
-    {% block content %}{% endblock %}
+      {% block content %}{% endblock %}
+    </div>
   </main>
 </body>
 </html>

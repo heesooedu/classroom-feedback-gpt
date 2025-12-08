@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}수업 CSV 등록 - 관리자{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:640px; margin:0 auto;">
+  <h2>수업 CSV 등록</h2>
+  <p class="text-muted">
+    과목명과 CSV 파일을 업로드하면, 해당 과목의 분반과 학생 수강 정보가 자동으로 등록됩니다.<br>
+    CSV 형식 예시:
+  </p>
+
+  <pre class="code-block" style="font-size:13px;">
+분반,학번,이름
+A,10101,김일번
+A,10302,김이번
+B,10503,김삼번
+  </pre>
+
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('admin_class_import') }}">
+    <label class="label" for="subject">과목명</label>
+    <input
+      class="input"
+      type="text"
+      id="subject"
+      name="subject"
+      required
+      placeholder="예: 정보, 인공지능기초"
+    >
+
+    <label class="label" for="year">연도 (선택)</label>
+    <input
+      class="input"
+      type="text"
+      id="year"
+      name="year"
+      placeholder="예: 2025"
+    >
+
+    <label class="label" for="term">학기 (선택)</label>
+    <input
+      class="input"
+      type="text"
+      id="term"
+      name="term"
+      placeholder="예: 1학기, 2학기"
+    >
+
+    <label class="label" for="csv_file">CSV 파일</label>
+    <input
+      class="input"
+      type="file"
+      id="csv_file"
+      name="csv_file"
+      accept=".csv"
+      required
+    >
+
+    <div style="margin-top:16px;">
+      <button class="btn" type="submit">업로드 및 등록</button>
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary" style="margin-left:8px;">
+        대시보드로 돌아가기
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}
