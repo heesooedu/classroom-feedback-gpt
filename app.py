@@ -6,8 +6,7 @@ import io
 from functools import wraps
 from sqlalchemy import func
 
-
-
+from datetime import datetime, timedelta, timezone
 
 from flask import (
     Flask, render_template, request, redirect,
@@ -26,7 +25,6 @@ from models import (
     ClassGroup,
     Enrollment,
 )
-
 
 from get_grader import grade_with_gpt
 
@@ -61,6 +59,21 @@ def create_app():
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key")
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///autograder_v2.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    # ---------- KST(UTC+9) 시간 필터 등록 ----------
+    KST = timezone(timedelta(hours=9))
+
+    def format_kst(dt):
+        """DB에는 UTC(naive)로 저장되어 있고, 화면에 보여줄 때만 KST로 변환."""
+        if dt is None:
+            return ""
+        # naive datetime이면 UTC 기준으로 간주
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(KST).strftime("%Y-%m-%d %H:%M")
+
+    app.jinja_env.filters["kst"] = format_kst
+    # ------------------------------------------------
 
     db.init_app(app)
 
@@ -140,7 +153,6 @@ def create_app():
         # GET 요청이면 로그인 폼만 보여줌
         return render_template("student/login.html")
 
-
     @app.route("/login/select_class", methods=["POST"])
     def select_class():
         """
@@ -158,7 +170,6 @@ def create_app():
 
         flash(f"{session.get('student_name')} 학생, {cg.label} 수업에 로그인되었습니다.")
         return redirect(url_for("problem_list"))
-
 
     @app.route("/logout")
     @student_login_required
@@ -180,7 +191,7 @@ def create_app():
         submissions = (
             Submission.query
             .filter_by(student_id=session["student_id"], problem_id=problem.id)
-            .order_by(Submission.created_at.desc())
+            .order_by(Submission.attempt_no.asc())
             .all()
         )
         return render_template(
@@ -195,13 +206,20 @@ def create_app():
         problem = Problem.query.get_or_404(problem_id)
         code = request.form["code"]
 
-        # 제출 횟수 제한 (예: 10회)
+        # 제출 횟수 제한 (최근 24시간 기준 예: 10회)
         student_id = session["student_id"]
-        existing_count = Submission.query.filter_by(
-            student_id=student_id, problem_id=problem.id
-        ).count()
+        now = datetime.utcnow()
+        window_start = now - timedelta(hours=24)
+
+        existing_count = (
+            Submission.query
+            .filter_by(student_id=student_id, problem_id=problem.id)
+            .filter(Submission.created_at >= window_start)
+            .count()
+        )
+
         if existing_count >= 10:
-            flash("이 문제에 대한 최대 제출 횟수를 초과했습니다. 선생님께 문의하세요.")
+            flash("이 문제에 대한 최근 24시간 제출 횟수를 초과했습니다. 선생님께 문의하세요.")
             return redirect(url_for("problem_detail", problem_id=problem.id))
 
         attempt_no = existing_count + 1
@@ -314,7 +332,6 @@ def create_app():
         return render_template("admin/problem_form.html", problem=problem)
 
     @app.route("/admin/problems/<int:problem_id>/toggle_open", methods=["POST"])
-    
     @admin_login_required
     def admin_problem_toggle_open(problem_id):
         problem = Problem.query.get_or_404(problem_id)
@@ -457,14 +474,6 @@ def create_app():
         # GET 요청이면 업로드 폼
         return render_template("admin/class_import.html")
 
-
-    # TODO:
-    # /admin/dashboard
-    # /admin/submission/<id>
-    # /admin/submission/<id>/rescore
-    # /admin/export
-    # 등은 2단계에서 구현.
-
     @app.route("/admin/dashboard")
     @admin_login_required
     def admin_dashboard():
@@ -546,7 +555,36 @@ def create_app():
             selected_problem=selected_problem,
         )
 
+    @app.route("/admin/submissions")
+    @admin_login_required
+    def admin_submissions():
+        """
+        특정 학생 + 특정 문제에 대한 모든 제출 내역을 보는 관리자 페이지.
+        ?student_id=...&problem_id=... 형태로 호출.
+        """
+        student_id = request.args.get("student_id", type=int)
+        problem_id = request.args.get("problem_id", type=int)
 
+        if not student_id or not problem_id:
+            flash("student_id와 problem_id가 필요합니다.")
+            return redirect(url_for("admin_dashboard"))
+
+        student = Student.query.get_or_404(student_id)
+        problem = Problem.query.get_or_404(problem_id)
+
+        subs = (
+            Submission.query
+            .filter_by(student_id=student.id, problem_id=problem.id)
+            .order_by(Submission.attempt_no.asc())
+            .all()
+        )
+
+        return render_template(
+            "admin/submissions.html",
+            student=student,
+            problem=problem,
+            submissions=subs,
+        )
 
     @app.route("/admin/submission/<int:submission_id>")
     @admin_login_required
@@ -554,12 +592,15 @@ def create_app():
         sub = Submission.query.get_or_404(submission_id)
         return render_template("admin/submission_detail.html", submission=sub)
 
-
-
     return app
 
 
 if __name__ == "__main__":
+    from waitress import serve
+
     app = create_app()
-    # 컴퓨터실에서 여러 PC가 접속하려면 host="0.0.0.0" 사용
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    # 개발할 때는 127.0.0.1로만 써도 되고,
+    # 교실 전체에서 접속하려면 host="0.0.0.0" 유지
+    print("✅ Waitress 서버 시작: http://0.0.0.0:8000 에서 대기 중...")
+    serve(app, host="0.0.0.0", port=8000)
+    # app.run(host="0.0.0.0", port=8000, debug=True)

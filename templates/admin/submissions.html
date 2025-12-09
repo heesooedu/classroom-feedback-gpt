@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}제출 상세 - 관리자{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>제출 상세</h2>
+  <p class="text-muted">
+    {{ problem.title }} – {{ student.student_code }} {{ student.name }} 학생의 제출 내역
+  </p>
+
+  {% if submissions|length == 0 %}
+    <p>아직 제출 내역이 없습니다.</p>
+  {% else %}
+    {% for sub in submissions %}
+      <div style="border:1px solid #e5e7eb; border-radius:12px; padding:12px 14px; margin-bottom:12px; background:#f9fafb;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div>
+            <strong>{{ loop.index }}번째 제출</strong>
+            <span style="font-size:12px; color:#6b7280; margin-left:6px;">
+              (시도 번호: {{ sub.attempt_no or '-' }})
+            </span>
+          </div>
+          <div style="font-size:13px; color:#6b7280;">
+            {{ sub.created_at|kst }}
+          </div>
+        </div>
+
+        <div style="font-size:13px; margin-bottom:4px;">
+          점수:
+          {% if sub.score is not none %}
+            <strong>{{ sub.score }} / {{ sub.max_score }}</strong>
+          {% else %}
+            -
+          {% endif %}
+          {% if sub.gpt_model %}
+            <span style="font-size:11px; color:#9ca3af; margin-left:6px;">
+              ({{ sub.gpt_model }})
+            </span>
+          {% endif %}
+        </div>
+
+        {% if sub.summary %}
+          <div style="font-size:16px; margin-bottom:6px; color:#4b5563;">
+            요약: {{ sub.summary }}
+          </div>
+        {% endif %}
+
+        <details style="margin-top:15px;">
+          <summary style="cursor:pointer; font-size:18px; color:#2563eb;">
+            코드 보기
+          </summary>
+          <pre class="code-block" style="white-space:pre; margin-top:6px; font-size:16px;">{{ sub.code }}</pre>
+        </details>
+
+        <details style="margin-top:15px;">
+          <summary style="cursor:pointer; font-size:18px; color:#16a34a;">
+            GPT 피드백 보기
+          </summary>
+          <div style="white-space:pre-wrap; margin-top:6px; font-size:16px; color:#374151;">
+            {{ sub.feedback }}
+          </div>
+        </details>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+    대시보드로 돌아가기
+  </a>
+</div>
+{% endblock %}

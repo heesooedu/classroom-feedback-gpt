@@ -62,6 +62,7 @@
           <th>제출 횟수</th>
           <th>마지막 제출 시간</th>
           <th>상태</th>
+          <th>제출 코드</th>   <!-- ✅ 새 컬럼 -->
         </tr>
       </thead>
       <tbody>
@@ -79,7 +80,7 @@
             <td>{{ row.attempt_count }}</td>
             <td>
               {% if row.last_time %}
-                {{ row.last_time.strftime("%Y-%m-%d %H:%M") }}
+                {{ row.last_time|kst }}
               {% else %}
                 -
               {% endif %}
@@ -91,6 +92,21 @@
                 만점
               {% else %}
                 부분 정답
+              {% endif %}
+            </td>
+            <td>
+              {% if row.has_submitted %}
+                <a
+                  href="{{ url_for('admin_submissions',
+                                   student_id=row.student.id,
+                                   problem_id=selected_problem.id) }}"
+                  class="btn btn-secondary"
+                  style="padding:4px 10px; font-size:12px;"
+                >
+                  자세히
+                </a>
+              {% else %}
+                -
               {% endif %}
             </td>
           </tr>

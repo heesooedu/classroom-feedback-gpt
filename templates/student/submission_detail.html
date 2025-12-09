@@ -8,7 +8,7 @@
     문제: <strong>{{ submission.problem.title }}</strong><br>
     시도 번호: {{ submission.attempt_no }}회<br>
     점수: <strong>{{ submission.score }}/{{ submission.max_score }}</strong><br>
-    제출 시간: {{ submission.created_at.strftime("%Y-%m-%d %H:%M:%S") }}
+    제출 시간: {{ submission.created_at|kst }}
   </p>
 
   <h3 class="subheading">요약</h3>
