@@ -392,3 +392,185 @@ body {
   background: #ecfdf5;
 }
 
+
+/* ---------- 공통 카드 스타일 ---------- */
+
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+.empty-state {
+  text-align: center;
+  color: #6b7280;
+}
+
+/* ---------- 테이블 스타일 개선 ---------- */
+
+.table-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  font-size: 0.9rem;
+}
+
+.table thead {
+  background: #f9fafb;
+}
+
+.table thead th {
+  font-weight: 600;
+  color: #374151;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.table tbody td {
+  padding: 9px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+  vertical-align: middle;
+}
+
+.table tbody tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.table tbody tr:hover {
+  background-color: #eff6ff;
+}
+
+/* 문제 제목 칸 살짝 강조 */
+.problem-title-cell {
+  max-width: 0;
+}
+
+.problem-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 점수 뱃지 */
+.score-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: #ecfdf3;
+  color: #166534;
+  font-size: 0.78rem;
+  border: 1px solid #bbf7d0;
+}
+
+/* ---------- 버튼 스타일 ---------- */
+
+/* 기본 버튼 스타일이 이미 있다면, 이게 override 됨 */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;      /* 이상한 그라데이션/음영 제거 */
+  color: #4b5563;
+  font-size: 0.85rem;
+  text-decoration: none;
+  box-shadow: none;         /* 그림자 제거 */
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+              color 0.15s ease, transform 0.05s ease;
+}
+
+.btn-secondary:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+  text-decoration: none;
+}
+
+.btn-secondary:active {
+  transform: translateY(1px);
+}
+
+.btn-small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 알약 크기 조절 (이 부분이 핵심) */
+  padding: 4px 16px;          /* 좌우 16px로 조금 더 넓게 */
+  border-radius: 999px;
+
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+
+  font-size: 0.85rem;         /* 너무 작지 않게 */
+  line-height: 1.2;
+  white-space: nowrap;        /* 글자 줄바꿈 금지 */
+
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+              transform 0.05s ease;
+}
+
+.btn-small:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.btn-small:active {
+  transform: translateY(1px);
+}
+
+
+/* 뒤로가기 링크용 약간 더 여유 있는 스타일 */
+.back-link {
+  padding-inline: 14px;
+}
+
+.back-link .arrow {
+  font-size: 1rem;
+  margin-right: 2px;
+}
+
+/* ---------- 문제 진행 상태 뱃지 ---------- */
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  border: 1px solid transparent;
+}
+
+.status-not-started {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border-color: #e5e7eb;
+}
+
+.status-in-progress {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.status-done {
+  background-color: #ecfdf3;
+  color: #166534;
+  border-color: #bbf7d0;
+}

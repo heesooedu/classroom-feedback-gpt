@@ -181,8 +181,64 @@ def create_app():
     @app.route("/problems")
     @student_login_required
     def problem_list():
+        student_id = session.get("student_id")
+
+        # 1) 공개된 문제들
         problems = Problem.query.filter_by(is_open=True).order_by(Problem.id).all()
-        return render_template("student/problems.html", problems=problems)
+
+        # 2) 이 학생의 제출 요약 (문제별)
+        summary_rows = (
+            db.session.query(
+                Submission.problem_id,
+                func.count(Submission.id).label("attempts"),
+                func.max(Submission.score).label("best_score"),
+                func.max(Submission.created_at).label("last_time"),
+            )
+            .filter(Submission.student_id == student_id)
+            .group_by(Submission.problem_id)
+            .all()
+        )
+
+        # problem_id -> {attempts, best_score, last_time} 매핑
+        summary_map = {}
+        for pid, attempts, best_score, last_time in summary_rows:
+            summary_map[pid] = {
+                "attempts": attempts,
+                "best_score": best_score,
+                "last_time": last_time,
+            }
+
+        # 3) 각 문제별로 상태(status)까지 포함한 dict 구성
+        status_map = {}
+        for p in problems:
+            info = summary_map.get(p.id)
+            if not info:
+                status = "미제출"
+                attempts = 0
+                best_score = None
+                last_time = None
+            else:
+                attempts = info["attempts"]
+                best_score = info["best_score"]
+                last_time = info["last_time"]
+
+                if best_score is not None and best_score >= p.max_score:
+                    status = "완료"
+                else:
+                    status = "진행 중"
+
+            status_map[p.id] = {
+                "status": status,
+                "attempts": attempts,
+                "best_score": best_score,
+                "last_time": last_time,
+            }
+
+        return render_template(
+            "student/problems.html",
+            problems=problems,
+            status_map=status_map,
+        )
 
     @app.route("/problems/<int:problem_id>", methods=["GET"])
     @student_login_required
@@ -248,13 +304,52 @@ def create_app():
     @app.route("/history")
     @student_login_required
     def history():
+        student_id = session.get("student_id")
+        if not student_id:
+            flash("학생 로그인이 필요합니다.")
+            return redirect(url_for("student_login"))
+
+        # 1) 이 학생의 모든 제출을 문제 ID, 시도 순서대로 가져오기
         subs = (
             Submission.query
-            .filter_by(student_id=session["student_id"])
-            .order_by(Submission.created_at.asc())
+            .filter_by(student_id=student_id)
+            .order_by(Submission.problem_id.asc(), Submission.attempt_no.asc())
             .all()
         )
-        return render_template("student/history.html", submissions=subs)
+
+        # 2) 파이썬에서 문제별로 묶어서 요약 만들기
+        rows_map = {}  # key: problem_id, value: dict
+        for sub in subs:
+            pid = sub.problem_id
+
+            if pid not in rows_map:
+                problem = Problem.query.get(pid)
+                rows_map[pid] = {
+                    "problem": problem,
+                    "attempts": 0,
+                    "best_score": None,
+                    "last_time": None,
+                }
+
+            row = rows_map[pid]
+            row["attempts"] += 1
+
+            # 최고 점수 갱신
+            if sub.score is not None:
+                if row["best_score"] is None or sub.score > row["best_score"]:
+                    row["best_score"] = sub.score
+
+            # 마지막 제출 시간 갱신
+            if row["last_time"] is None or sub.created_at > row["last_time"]:
+                row["last_time"] = sub.created_at
+
+        # 3) dict → list 로 변환 + 문제 ID 기준 정렬
+        rows = sorted(
+            rows_map.values(),
+            key=lambda r: r["problem"].id if r["problem"] else 0
+        )
+
+        return render_template("student/history.html", rows=rows)
 
     @app.route("/submission/<int:submission_id>")
     @student_login_required

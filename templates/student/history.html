@@ -1,25 +1,73 @@
 {% extends "base.html" %}
-{% block title %}내 제출 이력 - 파이썬 자동 채점{% endblock %}
+
+{% block title %}내 제출 이력{% endblock %}
 
 {% block content %}
-<div class="card">
-  <h2>내 제출 이력</h2>
-  <ul class="list-plain" style="margin-top:12px;">
-    {% for s in submissions %}
-      <li class="list-item">
-        <a href="{{ url_for('submission_detail', submission_id=s.id) }}" class="list-title">
-          {{ s.problem.title }} · 시도 {{ s.attempt_no }} · {{ s.score }}/{{ s.max_score }}점
-        </a>
-        <div class="list-meta">
-          {{ s.created_at|kst }}
-        </div>
-        {% if s.summary %}
-          <div class="text-muted">{{ s.summary }}</div>
-        {% endif %}
-      </li>
-    {% else %}
-      <li>아직 제출한 기록이 없습니다.</li>
-    {% endfor %}
-  </ul>
+<div class="page-header">
+  <h1>내 제출 이력</h1>
+  <p class="subtitle">
+    문제별로 나의 제출 현황을 확인할 수 있습니다.
+  </p>
+</div>
+
+{% if not rows or rows|length == 0 %}
+  <div class="card empty-state">
+    <p>아직 제출 이력이 없습니다. 먼저 문제를 풀어 보세요.</p>
+  </div>
+{% else %}
+  <div class="card table-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 8%">문제 ID</th>
+          <th style="width: 40%">문제 제목</th>
+          <th style="width: 10%">시도 횟수</th>
+          <th style="width: 15%">최고 점수</th>
+          <th style="width: 20%">마지막 제출 시간</th>
+          <th style="width: 7%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.problem.id }}</td>
+          <td class="problem-title-cell">
+            <div class="problem-title">{{ row.problem.title }}</div>
+          </td>
+          <td>{{ row.attempts }}</td>
+          <td>
+            {% if row.best_score is not none %}
+              <span class="score-chip">
+                {{ row.best_score }} / {{ row.problem.max_score }}
+              </span>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            {% if row.last_time %}
+              {{ row.last_time|kst }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('problem_detail', problem_id=row.problem.id) }}"
+               class="btn-small">
+              자세히
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
+<div class="mt-4">
+  <a href="{{ url_for('problem_list') }}" class="btn-secondary back-link">
+    <span class="arrow">←</span>
+    <span>문제 목록으로</span>
+  </a>
 </div>
 {% endblock %}

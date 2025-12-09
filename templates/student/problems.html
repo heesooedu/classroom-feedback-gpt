@@ -1,25 +1,79 @@
 {% extends "base.html" %}
-{% block title %}문제 목록 - 파이썬 자동 채점{% endblock %}
+
+{% block title %}문제 목록{% endblock %}
 
 {% block content %}
-<div class="card">
-  <h2>문제 목록</h2>
-  <p class="text-muted">
-    공개된 문제들만 보입니다. 문제를 클릭해서 코드를 작성·제출하세요.
+<div class="page-header">
+  <h1>문제 목록</h1>
+  <p class="subtitle">
+    공개된 문제와 나의 진행 상황을 한눈에 볼 수 있습니다.
   </p>
-  <ul class="list-plain" style="margin-top:12px;">
-    {% for p in problems %}
-      <li class="list-item">
-        <a href="{{ url_for('problem_detail', problem_id=p.id) }}" class="list-title">
-          {{ p.title }}
-        </a>
-        <div class="list-meta">
-          ID: {{ p.id }} · 만점: {{ p.max_score }}점
-        </div>
-      </li>
-    {% else %}
-      <li>현재 공개된 문제가 없습니다.</li>
-    {% endfor %}
-  </ul>
 </div>
+
+{% if not problems or problems|length == 0 %}
+  <div class="card empty-state">
+    <p>현재 공개된 문제가 없습니다.</p>
+  </div>
+{% else %}
+  <div class="card table-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 8%;">ID</th>
+          <th style="width: 38%;">문제 제목</th>
+          <th style="width: 14%;">진행 상황</th>
+          <th style="width: 15%;">최고 점수</th>
+          <th style="width: 18%;">마지막 제출 시간</th>
+          <th style="width: 7%;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for problem in problems %}
+        {% set st = status_map.get(problem.id) %}
+        <tr>
+          <td>{{ problem.id }}</td>
+          <td class="problem-title-cell">
+            <div class="problem-title">
+              {{ problem.title }}
+            </div>
+          </td>
+          <td>
+            {% if st %}
+              {% if st.status == "완료" %}
+                <span class="status-chip status-done">완료</span>
+              {% elif st.status == "진행 중" %}
+                <span class="status-chip status-in-progress">진행 중</span>
+              {% else %}
+                <span class="status-chip status-not-started">{{ st.status }}</span>
+              {% endif %}
+            {% else %}
+              <span class="status-chip status-not-started">미제출</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if st and st.best_score is not none %}
+              {{ st.best_score }} / {{ problem.max_score }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            {% if st and st.last_time %}
+              {{ st.last_time|kst }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('problem_detail', problem_id=problem.id) }}"
+               class="btn-small">
+              풀기
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
 {% endblock %}
