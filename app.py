@@ -251,7 +251,7 @@ def create_app():
         subs = (
             Submission.query
             .filter_by(student_id=session["student_id"])
-            .order_by(Submission.created_at.desc())
+            .order_by(Submission.created_at.asc())
             .all()
         )
         return render_template("student/history.html", submissions=subs)
