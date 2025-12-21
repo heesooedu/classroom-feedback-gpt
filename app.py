@@ -240,6 +240,7 @@ def create_app():
             status_map=status_map,
         )
 
+
     @app.route("/problems/<int:problem_id>", methods=["GET"])
     @student_login_required
     def problem_detail(problem_id):
@@ -250,11 +251,21 @@ def create_app():
             .order_by(Submission.attempt_no.asc())
             .all()
         )
+
+        # 🔹가장 최근 제출 코드 가져오기 (없으면 빈 문자열)
+        if submissions:
+            initial_code = submissions[-1].code or ""
+        else:
+            initial_code = ""
+
         return render_template(
             "student/problem_detail.html",
             problem=problem,
             submissions=submissions,
+            initial_code=initial_code,   # 🔹추가
         )
+
+
 
     @app.route("/problems/<int:problem_id>/submit", methods=["POST"])
     @student_login_required
